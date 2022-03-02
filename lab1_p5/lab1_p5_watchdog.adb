@@ -5,6 +5,20 @@ with Ada.Calendar; use Ada.Calendar;
 with Ada.Numerics.Float_Random; use Ada.Numerics.Float_Random;
 
 procedure lab1_p5_watchdog is
+    -- packages (1 total)
+        -- 1. DIO, allows printing Duration to terminal
+    -- globals (4 total)
+        -- 1. F3_START, designates start time for F3 after F1 has started
+        -- 2. HYPER_PERIOD, designates length of time for all tasks to repeat
+        -- 3. Start_Time, stores the start time of the program, to display relative time
+        -- 4. PollTime, stores the time to start the next 'hyper period', time to start F1 again
+    -- functions (1 total)
+        -- 1. randgen, random float generator with range [0 .. 1]
+    -- tasks (4 total)
+        -- 1. F1, runs every second on the second, unless deadlines aren't met. runs for 0.3s
+        -- 2. F2, runs immediately after F1. runs for 0.15s
+        -- 3. F3, runs 0.5s after F1 starts, runtime varies
+        -- 4. watchdog, runs while F3 is running. detects if F3 exceeds deadline and resynchronizes F1
 
     package DIO is new Text_Io.Fixed_Io(Duration);
 
@@ -66,7 +80,7 @@ procedure lab1_p5_watchdog is
         loop
             accept F3_start do
                 randomJitter := Duration(randgen*JITTER_SCALE); -- get jitter from random variable
-                F3_actual_time := F3_DELAY + randomJitter;
+                F3_actual_time := F3_DELAY + randomJitter; -- add jitter to default runtime
                 put("F3 started: "); DIO.Put(Ada.Calendar.Seconds(Clock) - Start_Time); put_line("");
                 watchdog.start;
                 delay F3_actual_time;
@@ -91,7 +105,7 @@ procedure lab1_p5_watchdog is
                     F3_time := end_time - start_time;
                     if ((F3_time) > 0.5) then
                         put("Warning, F3 Deadline Exceeded by:"); put_line(Duration'Image(F3_time - 0.5));
-                        PollTime := PollTime + HYPER_PERIOD;
+                        PollTime := PollTime + HYPER_PERIOD;  -- resyncronize PollTime, pushes F1 to the next whole second
                     end if;
                 end finish;
             or
